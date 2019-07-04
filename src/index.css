@@ -11,3 +11,7 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+.search_form{
+  background: linear-gradient(to right, red, yellow);
+}
