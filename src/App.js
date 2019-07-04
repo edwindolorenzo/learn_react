@@ -3,7 +3,7 @@ import logo from './logo.svg';
 import './App.css';
 import { list } from 'postcss';
 import { isTemplateElement } from '@babel/types';
-import {Row, Container} from 'react-bootstrap';
+import {Row, Container, FormGroup} from 'react-bootstrap';
 import author from './author';
 import { getCiphers } from 'tls';
 
@@ -37,7 +37,7 @@ class App extends Component{
 
     this.state = {
       author,
-      searchTerm: '',
+      searchTerm: DEFAULT_QUERY,
       result: null
     }
 
@@ -46,6 +46,7 @@ class App extends Component{
     this.searchValue = this.searchValue.bind(this);
     this.fetchTopStories = this.fetchTopStories.bind(this);
     this.setTopStories = this.setTopStories.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
   }
 
   // set top stories
@@ -56,7 +57,7 @@ class App extends Component{
   // fetch top stories
   fetchTopStories(searchTerm){
     // console.log(fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`).then(response => response.json()))
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`)
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
     .then(response => response.json())
     .then(result => this.setTopStories(result))
     .catch(e => e);
@@ -65,6 +66,12 @@ class App extends Component{
 
   componentDidMount(){
     this.fetchTopStories(this.state.searchTerm);
+  }
+
+  // on search submit function
+  onSubmit(event){
+    this.fetchTopStories(this.state.searchTerm);
+    event.preventDefault();
   }
 
   /*
@@ -105,7 +112,7 @@ class App extends Component{
   render(){
     const { result, author, searchTerm } = this.state;
 
-    if (!result){ return null; }
+    // if (!result){ return null; }
     // console.log(this);
     return (
 
@@ -117,17 +124,20 @@ class App extends Component{
               <Search 
                 onChange={ this.searchValue } 
                 value={ searchTerm }
+                onSubmit={ this.onSubmit }
               >Search Here</Search>
             </div>
           </Row>
         </Container>
 
         {/* Use API */}
+        { result &&
         <Author
           author = { result.hits }
           searchTerm= { searchTerm }
           removeItem = { this.removeItem }
         />
+        }
 
         {/* without API */}
         {/* <Author
@@ -142,11 +152,16 @@ class App extends Component{
 
 class Search extends Component {
   render(){
-    const { children } = this.props
+    const { children, onSubmit } = this.props
     return(
-      <form>
+      <form onSubmit={ onSubmit }>
+        <FormGroup>
         { children }
         <input  type= 'text' onChange={ this.props.onChange } value={ this.props.value } />
+        <span>
+          <button>Search</button>
+        </span>
+        </FormGroup>
       </form>
     )
   }
@@ -159,7 +174,8 @@ class Author extends Component {
       <div>
         <h1>
         {
-          author.filter(isSearched(searchTerm)).map(item =>
+          //author.filter(isSearched(searchTerm)).map(item =>
+          author.map(item =>
                 <div key={item.objectID}>
                   <h1> <a href={ item.url }>{ item.title }</a> by { item.author } </h1>
                   {/* to use this keyword use arrow func not the old func */}
