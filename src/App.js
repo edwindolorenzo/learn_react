@@ -3,19 +3,17 @@ import logo from './logo.svg';
 import './App.css';
 import { list } from 'postcss';
 import { isTemplateElement } from '@babel/types';
-import {Row, Container, FormGroup} from 'react-bootstrap';
+import {Row, Container, FormGroup, Col} from 'react-bootstrap';
 import author from './author';
 import { getCiphers } from 'tls';
-
+import { DEFAULT_PAGE, PATH_BASE, PATH_SEARCH, PARAM_SEARCH, DEFAULT_QUERY, PARAM_PAGE, PARAM_HPP, DEFAULT_HPP } from './constants/index'
 // default params to fetcg api
 
-const DEFAULT_QUERY = 'react';
-const PATH_BASE = 'https://hn.algolia.com/api/v1';
-const PATH_SEARCH = '/search';
-const PARAM_SEARCH = 'query=';
 
-const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
 
+const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}&${PARAM_PAGE}&${PARAM_HPP}${DEFAULT_HPP}`;
+
+// console.log(url);
 
 var paragraph = 'Welcome to React ';
 let name ='Edwindo';
@@ -51,13 +49,16 @@ class App extends Component{
 
   // set top stories
   setTopStories(result){
-    this.setState({ result: result});
+    const { hits, page } = result;
+    const oldHits = page !== 0 ? this.state.result.hits : [];
+    const updateHits = [...oldHits, ...hits]
+    this.setState({ result: { hits: updateHits } });
   }
 
   // fetch top stories
-  fetchTopStories(searchTerm){
+  fetchTopStories(searchTerm, page){
     // console.log(fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`).then(response => response.json()))
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
     .then(response => response.json())
     .then(result => this.setTopStories(result))
     .catch(e => e);
@@ -65,12 +66,12 @@ class App extends Component{
 
 
   componentDidMount(){
-    this.fetchTopStories(this.state.searchTerm);
+    this.fetchTopStories(this.state.searchTerm, DEFAULT_PAGE);
   }
 
   // on search submit function
   onSubmit(event){
-    this.fetchTopStories(this.state.searchTerm);
+    this.fetchTopStories(this.state.searchTerm, DEFAULT_PAGE);
     event.preventDefault();
   }
 
@@ -100,7 +101,11 @@ class App extends Component{
   removeItem(id){
     const isNotId = item => item.objectID !== id;
     const updatedList = this.state.result.hits.filter(isNotId);
-    this.setState({ result: {...this.state.result, hits: updatedList} })
+    // console.log({ result: { hits: updatedList } });
+    // console.log({  ...this.state.result, hits: updatedList });
+    // console.log({ result: { ...this.state.result, hits: updatedList } });
+    // console.log({ ...this.state.result } );
+    this.setState({ result: { ...this.state.result, hits: updatedList } })
   }
 
   // get value
@@ -114,21 +119,23 @@ class App extends Component{
 
     // if (!result){ return null; }
     // console.log(this);
+
+    const page = (result && result.page) || 0;
     return (
 
 
       <div className="App">
-        <Container>
-          <Row>
-            <div className='search_form'>
+        <Row>
+          <Col className='search'>
+            <div className='search_form' style= { { marginTop : '5px'}}>
               <Search 
                 onChange={ this.searchValue } 
                 value={ searchTerm }
                 onSubmit={ this.onSubmit }
               >Search Here</Search>
             </div>
-          </Row>
-        </Container>
+          </Col>
+        </Row>
 
         {/* Use API */}
         { result &&
@@ -145,6 +152,12 @@ class App extends Component{
           searchTerm= { searchTerm }
           removeItem = { this.removeItem }
         /> */}
+        <div>
+          <Button
+          onClick={ () => this.fetchTopStories(searchTerm, page + 1 ) }>
+            Load more
+          </Button>
+        </div>
       </div>
     );
   }
@@ -156,8 +169,7 @@ class Search extends Component {
     return(
       <form onSubmit={ onSubmit }>
         <FormGroup>
-        { children }
-        <input  type= 'text' onChange={ this.props.onChange } value={ this.props.value } />
+        <input  type= 'text' onChange={ this.props.onChange } value={ this.props.value } placeholder={ children } />
         <span>
           <button>Search</button>
         </span>
@@ -179,11 +191,11 @@ class Author extends Component {
                 <div key={item.objectID}>
                   <h1> <a href={ item.url }>{ item.title }</a> by { item.author } </h1>
                   {/* to use this keyword use arrow func not the old func */}
-                  <Delete
+                  <Button
                   type = 'button'
                   onClick = { () => removeItem(item.objectID)} >
                     Remove
-                  </Delete>
+                  </Button>
                 </div>
           )
         }
@@ -206,11 +218,11 @@ class ApiTable extends Component {
                 <div key={item.objectID}>
                   <h1> <a href={ item.url }>{ item.title }</a> by { item.author } </h1>
                   {/* to use this keyword use arrow func not the old func */}
-                  <Delete
+                  <Button
                   type = 'button'
                   onClick = { () => removeItem(item.objectID)} >
                     Remove
-                  </Delete>
+                  </Button>
                 </div>
           )
         }
@@ -230,14 +242,14 @@ class ApiTable extends Component {
 //   }
 // }
 
-// function Delete({ onClick, children }){
-//   return(
-//     <button onClick={ onClick }>{ children }</button>
-//   )
-// }
+function Button({ onClick, children }){
+  return(
+    <button onClick={ onClick }>{ children }</button>
+  )
+}
 
-const Delete = ({ onClick, children }) =>
-  <button onClick={ onClick }>{ children }</button>
+// const Button = ({ onClick, children }) =>
+//   <button onClick={ onClick }>{ children }</button>
 
 
 export default App;
